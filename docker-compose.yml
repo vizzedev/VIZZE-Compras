@@ -1,0 +1,18 @@
+# DMC:    VIZ-00-00-00-900C
+# Título: Núcleo › docker-compose de produção
+# BREX:   VIZ-00-00-00-022A
+#
+# Só o app — o banco é o Postgres do Supabase (externo, via
+# DATABASE_URL), não um container aqui. Variáveis vêm de um arquivo
+# `.env` na VPS (ver VARIAVEIS-DE-AMBIENTE-VPS.md), nunca commitado.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production

@@ -1,0 +1,38 @@
+/**
+ * DMC:    VIZ-00-00-00-900A
+ * Título: Núcleo › Design system › Tokens de cor e tipografia
+ * BREX:   VIZ-00-00-00-022A
+ *
+ * Paleta monocromática preto/branco/off-white + Poppins, com botões em
+ * glassmorfismo (ver docs/decisoes.md). Alerta e erro continuam
+ * semânticos — sem cor ali, "reprovado" e "ponto de atenção" ficariam
+ * indistinguíveis do resto. Qualquer ajuste de identidade muda só este
+ * arquivo — nunca os componentes.
+ *
+ * `--cor-serie-N` são as 4 primeiras cores categóricas validadas da
+ * skill de dataviz (ordem azul/laranja/água/amarelo — a ordem é o
+ * mecanismo de segurança contra daltonismo, nunca escolhida à toa),
+ * usadas só nos gráficos do painel analítico (VIZ-90) para diferenciar
+ * as 4 etapas cronometradas (as 3 primeiras validam all-pairs; a 4ª
+ * entra só em gráfico de barra adjacente, nunca scatter/pizza).
+ */
+:root {
+  --cor-fundo: #f7f7f5;
+  --cor-superficie: #ffffff;
+  --cor-texto: #121212;
+  --cor-texto-suave: #6e6e6e;
+  --cor-primaria: #121212;
+  --cor-primaria-fundo: #ececea;
+  --cor-borda: #e2e2e0;
+  --cor-alerta: #b98900;
+  --cor-alerta-fundo: #fbf2dc;
+  --cor-erro: #c0392b;
+  --cor-erro-fundo: #fbeae7;
+  --cor-sucesso: #2e7d52;
+  --cor-sucesso-fundo: #e7f3ec;
+  --cor-serie-1: #2a78d6;
+  --cor-serie-2: #eb6834;
+  --cor-serie-3: #1baf7a;
+  --cor-serie-4: #eda100;
+  --fonte-base: 'Poppins', system-ui, sans-serif;
+}
