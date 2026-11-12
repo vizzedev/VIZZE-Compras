@@ -56,7 +56,10 @@ export function AppShell({ active, backTo, backLabel, title, children }: AppShel
 
   async function sair() {
     await authStore.sair();
-    navigate('/login');
+    // recarga completa (não `navigate`): zera as stores em memória, senão o
+    // próximo login nesta mesma aba reaproveitaria dados do usuário anterior
+    // (mesma causa raiz do bug corrigido em LoginPage.tsx)
+    window.location.href = '/login';
   }
 
   function abrirNotificacao(id: string, orcamentoId: string) {

@@ -5,13 +5,18 @@
  *
  * Usuário/senha são checados de verdade no servidor (bcrypt) — ver
  * src/lib/auth.ts e server/routes/auth.ts.
+ *
+ * Pós-login é um `window.location.href` (recarga completa), não
+ * `navigate` do router: as stores em `src/lib/store.ts` buscam os
+ * dados do servidor uma única vez, no carregamento do módulo — se o
+ * login só trocasse de rota no React, esses módulos já teriam rodado
+ * (e levado 401, por rodar antes do cookie existir) e nunca mais
+ * buscariam de novo, deixando toda tela vazia mesmo com sessão válida.
  */
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { authStore } from '@/lib/auth';
 
 export function LoginPage() {
-  const navigate = useNavigate();
   const usuarioRef = useRef<HTMLInputElement>(null);
   const senhaRef = useRef<HTMLInputElement>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -23,7 +28,7 @@ export function LoginPage() {
       setErro('Usuário ou senha incorretos.');
       return;
     }
-    navigate(sessao.perfil === 'Master' ? '/usuarios' : '/obras');
+    window.location.href = sessao.perfil === 'Master' ? '/usuarios' : '/obras';
   }
 
   return (
