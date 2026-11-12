@@ -7,7 +7,7 @@
 
 ### Vizze Compras
 
-Gestão do fluxo de compras de obra — da requisição à nota fiscal, numa única fila.
+Gestão do fluxo de compras de obra: da requisição à nota fiscal, numa única fila.
 
 [![Node](https://img.shields.io/badge/Node-20-339933?logo=node.js&logoColor=white)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
@@ -22,7 +22,7 @@ Gestão do fluxo de compras de obra — da requisição à nota fiscal, numa ún
 
 ## O que é
 
-A Vizze Compras é o sistema interno da **Vizze Arquitetura e Construção** para acompanhar o processo de compra de material de obra do início ao fim: o encarregado pede, o comprador cotação com fornecedores, o engenheiro aprova, e a obra recebe — com histórico, justificativas e um painel que mostra onde o processo está travando.
+A Vizze Compras é o sistema interno da **Vizze Arquitetura e Construção** para acompanhar o processo de compra de material de obra do início ao fim: o encarregado pede, o comprador cota com fornecedores, o engenheiro aprova, e a obra recebe. Com histórico, justificativas e um painel que mostra onde o processo está travando.
 
 Nasceu pra resolver um problema concreto: requisições em papel ou WhatsApp, cotações em planilhas soltas e nenhum jeito de saber, depois, "por que esse orçamento demorou tanto". Tudo isso agora mora em um único lugar, com uma trilha de auditoria de verdade.
 
