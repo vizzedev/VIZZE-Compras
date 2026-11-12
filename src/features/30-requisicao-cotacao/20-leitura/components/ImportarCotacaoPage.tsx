@@ -7,15 +7,25 @@
  * antes. Comprador escolhe um fornecedor já cadastrado, cria um novo
  * aqui mesmo, ou edita os dados do escolhido antes de salvar. Com
  * `:cotacaoId` na rota, reabre uma importação já salva para revisão.
+ *
+ * Numa importação nova, a tabela já nasce com os itens da requisição
+ * (sem quantidade/preço — só a descrição), pra servir de modelo; preço
+ * e quantidade só vêm da leitura por IA ou do preenchimento manual.
+ * Ao ler um documento, cada item lido é casado por similaridade com um
+ * item já na tabela (`casarComItemRequisicao`) — a IA quase nunca
+ * escreve a descrição exatamente igual à da requisição, então sem esse
+ * casamento cada leitura criaria um item novo em vez de preencher o
+ * que já era esperado.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/ui/AppShell';
 import { card, input, label, btnPrimary, btnSecondary, pill, formatMoeda } from '@/components/ui/styles';
-import { cotacoesImportadasStore, fornecedoresStore, type Fornecedor } from '@/lib/mockData';
+import { cotacoesImportadasStore, fornecedoresStore, orcamentosStore, type Fornecedor } from '@/lib/mockData';
 import { useLista } from '@/lib/store';
 import { lerCotacao } from '@/lib/leituraDocumento';
 import { gerarId } from '@/lib/id';
+import { casarComItemRequisicao, mesmoItem } from '../casarItemRequisicao';
 
 interface ItemImportado {
   readonly id: string;
@@ -41,16 +51,20 @@ export function ImportarCotacaoPage() {
   const { orcamentoId, cotacaoId } = useParams();
   const voltarParaMapa = () => navigate(`/mapas-cotacao/${orcamentoId}`);
   const cotacaoExistente = cotacaoId ? cotacoesImportadasStore.obter(cotacaoId) : undefined;
+  useLista(orcamentosStore);
+  const orcamento = orcamentoId ? orcamentosStore.obter(orcamentoId) : undefined;
   const fornecedores = useLista(fornecedoresStore);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [arquivo, setArquivo] = useState<string | null>(cotacaoExistente?.arquivo ?? null);
   const [lendo, setLendo] = useState(false);
-  const [itens, setItens] = useState<ItemImportado[]>(
-    cotacaoExistente
-      ? cotacaoExistente.itens.map((item) => ({ id: novoId(), descricao: item.item, quantidade: String(item.quantidade), precoUnitario: item.precoUnitario.toFixed(2).replace('.', ',') }))
-      : [],
-  );
+  const [itens, setItens] = useState<ItemImportado[]>(() => {
+    if (cotacaoExistente) {
+      return cotacaoExistente.itens.map((item) => ({ id: novoId(), descricao: item.item, quantidade: String(item.quantidade), precoUnitario: item.precoUnitario.toFixed(2).replace('.', ',') }));
+    }
+    // Nova importação: a tabela já nasce com os itens da requisição, como modelo — sem quantidade/preço ainda.
+    return (orcamento?.itensRequisicao ?? []).map((item) => ({ id: novoId(), descricao: item.descricao, quantidade: '', precoUnitario: '' }));
+  });
   const [frete, setFrete] = useState(cotacaoExistente ? String(cotacaoExistente.frete) : '0');
   const [fornecedorId, setFornecedorId] = useState(cotacaoExistente?.fornecedorId ?? '');
   const [fornecedorDados, setFornecedorDados] = useState(() => {
@@ -59,6 +73,19 @@ export function ImportarCotacaoPage() {
   });
   const [erro, setErro] = useState<string | null>(null);
   const [erroLeitura, setErroLeitura] = useState<string | null>(null);
+
+  // Mesmo caso de corrida de carregamento do RequisicaoPage: se a página
+  // abriu antes do orçamento (ou da cotação existente) chegar do cache
+  // local, preenche assim que chegar, sem precisar remontar a tela.
+  const jaSincronizou = useRef(false);
+  useEffect(() => {
+    if (jaSincronizou.current) return;
+    if (cotacaoId && !cotacaoExistente) return; // ainda esperando a cotação existente carregar
+    jaSincronizou.current = true;
+    if (!cotacaoExistente && itens.length === 0 && orcamento && orcamento.itensRequisicao.length > 0) {
+      setItens(orcamento.itensRequisicao.map((item) => ({ id: novoId(), descricao: item.descricao, quantidade: '', precoUnitario: '' })));
+    }
+  }, [orcamento, cotacaoExistente, cotacaoId, itens.length]);
 
   const total = itens.reduce((soma, item) => soma + paraNumero(item.quantidade) * paraNumero(item.precoUnitario), 0) + paraNumero(frete);
 
@@ -73,14 +100,22 @@ export function ImportarCotacaoPage() {
       if (leitura.itens.length === 0) {
         setErroLeitura('A IA não encontrou itens nesse documento — confira o arquivo ou preencha manualmente.');
       } else {
-        setItens(
-          leitura.itens.map((item) => ({
-            id: novoId(),
-            descricao: item.descricao,
-            quantidade: String(item.quantidade),
-            precoUnitario: item.precoUnitario.toFixed(2).replace('.', ','),
-          })),
-        );
+        const descricoesRequisicao = orcamento?.itensRequisicao.map((i) => i.descricao) ?? [];
+        setItens((atual) => {
+          const resultado = [...atual];
+          for (const lido of leitura.itens) {
+            const descricaoCasada = casarComItemRequisicao(lido.descricao, descricoesRequisicao);
+            const quantidade = String(lido.quantidade);
+            const precoUnitario = lido.precoUnitario.toFixed(2).replace('.', ',');
+            const indiceExistente = resultado.findIndex((item) => mesmoItem(item.descricao, descricaoCasada));
+            if (indiceExistente >= 0) {
+              resultado[indiceExistente] = { ...resultado[indiceExistente], descricao: descricaoCasada, quantidade, precoUnitario };
+            } else {
+              resultado.push({ id: novoId(), descricao: descricaoCasada, quantidade, precoUnitario });
+            }
+          }
+          return resultado;
+        });
       }
       if (leitura.frete !== undefined) setFrete(String(leitura.frete));
       if (leitura.fornecedor?.nome && fornecedorId === 'novo') {
@@ -118,8 +153,12 @@ export function ImportarCotacaoPage() {
       setErro('Identifique o fornecedor — escolha um já cadastrado ou preencha o nome do novo.');
       return;
     }
-    if (itens.length === 0) {
-      setErro('Anexe um documento ou adicione pelo menos um item.');
+    // Só entram no comparativo itens com preço de verdade — uma linha-modelo da
+    // requisição que ficou em branco (nunca cotada por este fornecedor) NÃO é
+    // "fornecedor cotou R$ 0", é "este fornecedor não cotou este item".
+    const itensCotados = itens.filter((item) => item.descricao.trim().length > 0 && paraNumero(item.precoUnitario) > 0);
+    if (itensCotados.length === 0) {
+      setErro('Anexe um documento ou preencha o preço de pelo menos um item.');
       return;
     }
 
@@ -134,7 +173,7 @@ export function ImportarCotacaoPage() {
       fornecedorNome: fornecedor.nome,
       arquivo: arquivo ?? 'preenchido manualmente',
       frete: paraNumero(frete),
-      itens: itens.map((item) => ({
+      itens: itensCotados.map((item) => ({
         item: item.descricao,
         quantidade: paraNumero(item.quantidade),
         precoUnitario: paraNumero(item.precoUnitario),

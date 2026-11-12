@@ -204,6 +204,18 @@ export function RequisicaoPage() {
     setItemParaExcluir(null);
   }
 
+  /** Grava o que já foi preenchido, sem exigir obra nem itens completos — ao contrário de "Validar itens", que é a entrada formal pro fluxo de cotação. */
+  function salvarRascunho() {
+    const itensPreenchidos = itens.filter((item) => item.descricao.trim().length > 0);
+    orcamentosStore.atualizar(orcamento!.id, {
+      obraId,
+      obraNome: obra?.nome ?? '',
+      cliente: obra?.cliente ?? '',
+      itensRequisicao: itensPreenchidos.map(({ descricao, quantidade, unidade }) => ({ descricao, quantidade, unidade })),
+    });
+    navigate('/obras');
+  }
+
   function validarItens() {
     if (!obraId) {
       setErroObra(true);
@@ -286,7 +298,7 @@ export function RequisicaoPage() {
 
       {!validado ? (
         <div className="flex justify-end gap-2">
-          <button className={btnSecondary} onClick={() => navigate('/obras')}>Salvar rascunho</button>
+          <button className={btnSecondary} onClick={salvarRascunho}>Salvar rascunho</button>
           <button className={btnPrimary} onClick={validarItens}>Validar itens</button>
         </div>
       ) : (

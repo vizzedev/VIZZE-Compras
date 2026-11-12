@@ -20,6 +20,11 @@ export function UsuariosPage() {
     return obrasIds.map((id) => obras.find((o) => o.id === id)?.nome ?? '?').join(', ');
   }
 
+  function excluir(nome: string, id: string) {
+    if (!window.confirm(`Excluir o usuário "${nome}"? Essa ação não pode ser desfeita.`)) return;
+    usuariosStore.remover(id);
+  }
+
   return (
     <AppShell title="Usuários">
       <div className="-mt-3 flex justify-end">
@@ -39,7 +44,8 @@ export function UsuariosPage() {
             </div>
             <div className="flex items-center gap-3.5">
               <span className={pill(usuario.perfil === 'Master' ? 'primaria' : 'neutral')}>{usuario.perfil}</span>
-              <button className="text-xs text-texto-suave" onClick={() => usuariosStore.remover(usuario.id)}>
+              <Link to={`/usuarios/${usuario.id}/editar`} className="text-xs text-texto-suave">Editar</Link>
+              <button className="text-xs text-texto-suave" onClick={() => excluir(usuario.nome, usuario.id)}>
                 Excluir
               </button>
             </div>

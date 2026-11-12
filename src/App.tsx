@@ -11,6 +11,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { LoginPage } from '@/features/10-identidade/00-login/components/LoginPage';
 import { UsuariosPage } from '@/features/10-identidade/20-usuarios/components/UsuariosPage';
 import { NovoUsuarioPage } from '@/features/10-identidade/20-usuarios/components/NovoUsuarioPage';
+import { EditarUsuarioPage } from '@/features/10-identidade/20-usuarios/components/EditarUsuarioPage';
 import { ObrasPage } from '@/features/20-cadastros/00-obras/components/ObrasPage';
 import { EditarObraPage } from '@/features/20-cadastros/00-obras/components/EditarObraPage';
 import { FornecedoresPage } from '@/features/20-cadastros/20-fornecedores/components/FornecedoresPage';
@@ -54,6 +55,7 @@ export default function App() {
 
       <Route path="/usuarios" element={<UsuariosPage />} />
       <Route path="/usuarios/novo" element={<NovoUsuarioPage />} />
+      <Route path="/usuarios/:usuarioId/editar" element={<EditarUsuarioPage />} />
       <Route path="/painel" element={<PainelPage />} />
     </Routes>
   );

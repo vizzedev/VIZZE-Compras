@@ -34,6 +34,11 @@ export function MapaCotacaoPage() {
     navigate(`/comparativo/${orcamento!.id}`);
   }
 
+  function removerCotacao(fornecedorNome: string, id: string) {
+    if (!window.confirm(`Remover a cotação de "${fornecedorNome}"? Essa ação não pode ser desfeita.`)) return;
+    cotacoesImportadasStore.remover(id);
+  }
+
   return (
     <AppShell active="obras" backTo={`/requisicao/${orcamento.id}`} backLabel="Requisição" title={`Mapa de cotação — Orçamento ${orcamento.codigo}`}>
       <EtapasPipeline orcamentoId={orcamento.id} etapaAlcancada={orcamento.etapa} atual="cotacao" />
@@ -54,7 +59,7 @@ export function MapaCotacaoPage() {
                 <div className="flex items-center gap-3">
                   <span className={pill('primaria')}>importada</span>
                   <Link to={`/mapas-cotacao/${orcamento.id}/${cotacao.id}/editar`} className={btnSoft}>Revisar</Link>
-                  <button className="text-xs text-texto-suave" onClick={() => cotacoesImportadasStore.remover(cotacao.id)}>
+                  <button className="text-xs text-texto-suave" onClick={() => removerCotacao(cotacao.fornecedorNome, cotacao.id)}>
                     Remover
                   </button>
                 </div>

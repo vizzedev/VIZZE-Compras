@@ -43,6 +43,27 @@ rotaUsuarios.post('/', async (req, res) => {
   res.status(201).json({ ok: true });
 });
 
+/** Master edita nome/perfil/obras e, opcionalmente, redefine a senha (nunca lê a senha atual — hash é via mão única). */
+rotaUsuarios.patch('/:id', async (req, res) => {
+  const { nome, senha, perfil, obrasIds } = req.body as {
+    nome?: string; senha?: string; perfil?: string; obrasIds?: readonly string[];
+  };
+  const colunas: { nome?: string; perfil?: string; senhaHash?: string } = {};
+  if (nome) colunas.nome = nome;
+  if (perfil) colunas.perfil = perfil;
+  if (senha) colunas.senhaHash = await gerarHash(senha);
+  if (Object.keys(colunas).length > 0) {
+    await db.update(usuarios).set(colunas).where(eq(usuarios.id, req.params.id));
+  }
+  if (obrasIds) {
+    await db.delete(usuariosObras).where(eq(usuariosObras.usuarioId, req.params.id));
+    if (obrasIds.length > 0) {
+      await db.insert(usuariosObras).values(obrasIds.map((obraId) => ({ usuarioId: req.params.id, obraId })));
+    }
+  }
+  res.json({ ok: true });
+});
+
 rotaUsuarios.delete('/:id', async (req, res) => {
   await db.delete(usuarios).where(eq(usuarios.id, req.params.id));
   res.json({ ok: true });

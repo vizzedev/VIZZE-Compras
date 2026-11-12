@@ -1,3 +1,7 @@
+// brex-excecao P10-04: componente já grande antes desta rodada de correções
+// (4 status × edição/aprovação/reprovação no mesmo lugar); extrair o
+// histórico já ajudou (HistoricoOrcamento.tsx) — o resto (tabela de itens +
+// ações) compartilha estado demais pra valer a pena fatiar agora.
 /**
  * DMC:    VIZ-40-00-00-400A
  * Título: Orçamento › Detalhe, aprovação e fluxo comprador ⇄ engenheiro
@@ -21,6 +25,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/ui/AppShell';
 import { EtapasPipeline } from '@/components/ui/EtapasPipeline';
 import { CarregandoPagina } from '@/components/ui/CarregandoPagina';
+import { HistoricoOrcamento } from './HistoricoOrcamento';
 import { card, input, btnPrimary, btnSecondary, btnDanger, btnSoft, pill, formatMoeda } from '@/components/ui/styles';
 import { agora, notificacoesStore, orcamentosStore, statusRecebimento, versaoAtual, type ItemOrcamento } from '@/lib/mockData';
 import { useLista } from '@/lib/store';
@@ -120,6 +125,9 @@ export function OrcamentoPage() {
       status: 'reprovado' as const,
       justificativa,
       decididaEm: agoraIso,
+      // Reaproveita `aprovadoPor` pra registrar quem decidiu, aprovando ou
+      // reprovando — não existe um campo separado "reprovadoPor".
+      aprovadoPor: nomeSessao(),
       itens: atual.itens.map((item) => ({ ...item, pontoAtencao: itensMarcados.has(item.item) })),
     };
     const novaVersao = {
@@ -127,6 +135,10 @@ export function OrcamentoPage() {
       versao: atual.versao + 1,
       status: 'rascunho' as const,
       criadaEm: agoraIso,
+      // Os itens levam a marcação de "ponto de atenção" pro rascunho novo —
+      // sem isso, o comprador não vê quais itens o engenheiro apontou,
+      // porque a marcação só existia na cópia arquivada em `versaoReprovada`.
+      itens: versaoReprovada.itens,
       justificativa: undefined,
       aprovadoPor: undefined,
       enviadaParaAprovacaoEm: undefined,
@@ -175,6 +187,11 @@ export function OrcamentoPage() {
 
   const podeEditarAprovado = atual.status === 'aprovado' && !editando && podeAprovar;
   const recebimento = atual.status === 'aprovado' ? statusRecebimento(orcamento) : null;
+  // Só mostra o banner de reprovação na versão que nasceu dela (a imediatamente seguinte) —
+  // não em rascunhos mais antigos ou já reenviados depois.
+  const ultimaReprovacao = emRascunho
+    ? orcamento.versoes.find((v) => v.status === 'reprovado' && v.versao === atual.versao - 1)
+    : undefined;
 
   return (
     <AppShell active="orcamentos" backTo="/orcamentos" backLabel="Orçamentos" title={`Orçamento ${orcamento.codigo} · versão ${atual.versao}`}>
@@ -183,6 +200,18 @@ export function OrcamentoPage() {
         Obra {orcamento.obraNome} · Cliente {orcamento.cliente} · Comprador {orcamento.compradorResponsavel}
       </p>
       <span className={pill(status.tone)}>{status.texto}{editando ? ' · editando' : ''}</span>
+
+      {ultimaReprovacao && (
+        <div className="rounded-card bg-erro-fundo p-4">
+          <p className="m-0 text-sm font-bold text-erro">
+            Reprovado por {ultimaReprovacao.aprovadoPor ?? 'o engenheiro'}
+          </p>
+          <p className="m-0 mt-1 text-sm text-texto">"{ultimaReprovacao.justificativa}"</p>
+          <p className="m-0 mt-1 text-xs text-texto-suave">
+            Os itens marcados como "ponto de atenção" na tabela abaixo foram os apontados para revisão.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-5">
         <div className="flex flex-[2] flex-col gap-4" style={{ minWidth: 340 }}>
@@ -339,35 +368,7 @@ export function OrcamentoPage() {
             </div>
           )}
 
-          <div className={card}>
-            <div className="mb-2 text-sm font-bold text-texto">Histórico de versões</div>
-            {orcamento.versoes.map((v) => (
-              <div key={v.versao} className="mb-2 text-xs last:mb-0">
-                <div className="font-bold text-texto">
-                  Versão {v.versao} <span className="font-normal text-texto-suave">· {STATUS_PILL[v.status].texto}</span>
-                </div>
-                {v.editadoPor && <div className="text-texto-suave">Editado por {v.editadoPor}</div>}
-                {v.notaEdicao && <div className="text-texto-suave">"{v.notaEdicao}"</div>}
-                {!v.editadoPor && v.aprovadoPor && <div className="text-texto-suave">Aprovado por {v.aprovadoPor}</div>}
-                {v.justificativa && <div className="text-texto-suave">"{v.justificativa}"</div>}
-              </div>
-            ))}
-          </div>
-
-          {orcamento.historico.length > 0 && (
-            <div className={card}>
-              <div className="mb-2 text-sm font-bold text-texto">Histórico de alterações</div>
-              {[...orcamento.historico].reverse().map((e) => (
-                <div key={e.id} className="mb-2.5 text-xs last:mb-0">
-                  <div className="font-bold text-texto">
-                    {e.descricao} <span className="font-normal text-texto-suave">· {e.autor}</span>
-                  </div>
-                  <div className="text-texto-suave">"{e.justificativa}"</div>
-                  <div className="text-texto-suave">{new Date(e.registradoEm).toLocaleString('pt-BR')}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          <HistoricoOrcamento orcamento={orcamento} />
         </div>
       </div>
     </AppShell>
