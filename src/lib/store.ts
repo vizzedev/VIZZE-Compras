@@ -22,6 +22,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { gerarId } from './id';
+import { relatarSessaoInvalida } from './auth';
 
 async function persistir(metodo: 'POST' | 'PATCH' | 'DELETE', url: string, corpo?: unknown): Promise<void> {
   try {
@@ -31,6 +32,10 @@ async function persistir(metodo: 'POST' | 'PATCH' | 'DELETE', url: string, corpo
       body: corpo !== undefined ? JSON.stringify(corpo) : undefined,
       credentials: 'include',
     });
+    if (resposta.status === 401) {
+      relatarSessaoInvalida();
+      return;
+    }
     if (!resposta.ok) {
       console.error(`[store] ${metodo} ${url} falhou (${resposta.status}) — a mudança ficou só local até a próxima sincronização.`);
     }
@@ -51,7 +56,11 @@ function createStore<T extends { id: string }>(recurso: string) {
   async function carregar() {
     try {
       const resposta = await fetch(`/api/${recurso}`, { credentials: 'include' });
-      if (resposta.ok) itens = await resposta.json();
+      if (resposta.status === 401) {
+        relatarSessaoInvalida();
+      } else if (resposta.ok) {
+        itens = await resposta.json();
+      }
     } catch (erro) {
       console.error(`[store] falha ao carregar /api/${recurso}`, erro);
     } finally {

@@ -64,6 +64,28 @@ function emitir() {
   for (const listener of listeners) listener();
 }
 
+/**
+ * Chamado por `src/lib/store.ts` sempre que uma resposta da API vem
+ * 401 — significa que o cookie de sessão não chegou ou não é mais
+ * válido, mesmo que a tela ainda pareça "logado" (cache local
+ * otimista). Sem isso, a falha fica muda: a tela continua mostrando
+ * os dados que o usuário digitou (só na memória), e some tudo no
+ * próximo recarregamento, porque nada foi gravado no banco de
+ * verdade. Em vez disso, avisa e força um novo login.
+ */
+export function relatarSessaoInvalida(): void {
+  if (sessaoAtual === null) return;
+  sessaoAtual = null;
+  salvarCache(null);
+  emitir();
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+    window.alert(
+      'Sua sessão expirou ou não está sendo reconhecida pelo servidor — o que você preencheu desde então NÃO foi salvo. Faça login de novo.',
+    );
+    window.location.href = '/login';
+  }
+}
+
 async function conferirSessaoNoServidor() {
   try {
     const resposta = await fetch('/api/sessao', { credentials: 'include' });
