@@ -19,6 +19,7 @@ import { authStore, useSessao } from '@/lib/auth';
 import { btnPrimary } from '@/components/ui/styles';
 import { criarOrcamento, notificacoesStore } from '@/lib/mockData';
 import { useLista } from '@/lib/store';
+import logoIcone from '@/assets/logo-vizze-icone.png';
 
 type NavItem = 'obras' | 'fornecedores' | 'orcamentos' | 'usuarios' | 'painel';
 
@@ -77,8 +78,11 @@ export function AppShell({ active, backTo, backLabel, title, children }: AppShel
     <div className="min-h-screen bg-fundo print:bg-white">
       <header className="flex items-center justify-between bg-superficie px-8 py-4 shadow-card print:hidden">
         <div className="flex items-center gap-7">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/85 text-sm font-bold text-white backdrop-blur-md">
-            VC
+          <span
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/85 p-2 backdrop-blur-md"
+            aria-label="Vizze Compras"
+          >
+            <img src={logoIcone} alt="" className="h-full w-full object-contain" />
           </span>
           {links.map((item) => (
             <Link
